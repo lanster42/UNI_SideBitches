@@ -45,7 +45,7 @@ type register =
   | C
   | D
 
-(* let primer_tipi_1 = [[A; B; B; A]; [A; C; D; C]] *)
+let primer_tipi_1 = [[A; B; B; A]; [A; C; D; C]]
 (* val primer_tipi_1 : register list list = [[A; B; B; A]; [A; C; D; C]] *)
 
 (*----------------------------------------------------------------------------*
@@ -63,7 +63,7 @@ type expression =
   | Register of register
   | Const of int
 
-(* let primer_tipi_2 = [Register B; Const 42] *)
+let primer_tipi_2 = [Register B; Const 42]
 (* val primer_tipi_2 : expression list = [Register B; Const 42] *)
 
 (*----------------------------------------------------------------------------*
@@ -77,9 +77,9 @@ type expression =
  tip z eno samo varianto `Address` s celoštevilskim argumentom.
 [*----------------------------------------------------------------------------*)
 
-type address 
+type address = Address of int
 
-(* let primer_tipi_3 = (42, Address 42) *)
+let primer_tipi_3 = (42, Address 42)
 (* val primer_tipi_3 : int * address = (42, Address 42) *)
 
 (*----------------------------------------------------------------------------*
@@ -125,31 +125,31 @@ type address
 
 type instruction =
   | MOV of register * expression
-  (* | ADD of TODO *)
-  (* | SUB of TODO *)
+  | ADD of register * expression
+  | SUB of register * expression
   | INC of register
-  (* | DEC of TODO *)
-  (* | MUL of TODO *)
+  | DEC of register
+  | MUL of expression
   | DIV of expression
-  (* | AND of TODO *)
-  (* | OR of TODO *)
-  (* | XOR of TODO *)
-  (* | NOT of TODO *)
-  (* | CMP of TODO *)
+  | AND of register * expression
+  | OR of register * expression
+  | XOR of register * expression
+  | NOT of register
+  | CMP of register * expression
   | JMP of address
-  (* | JA of TODO *)
-  (* | JAE of TODO *)
-  (* | JB of TODO *)
-  (* | JBE of TODO *)
-  (* | JE of TODO *)
-  (* | JNE of TODO *)
+  | JA of address
+  | JAE of address
+  | JB of address
+  | JBE of address
+  | JE of address
+  | JNE of address
   | CALL of address
   | RET
   | PUSH of expression
   | POP of register
   | HLT
 
-(* let primer_tipi_4 = [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT ] *)
+let primer_tipi_4 = [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT ]
 (* val primer_tipi_4 : instruction list =
   [MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT] *)
 
@@ -240,15 +240,23 @@ type instruction =
  - `stack`: seznam celoštevilskih vrednosti na skladu.
 [*----------------------------------------------------------------------------*)
 
-type state 
+type state = {
+  instructions : instruction array;
+  a : int; b : int; c : int; d : int;
+  ip : address;
+  zero : bool;
+  carry : bool;
+  stack : int list
+}
 
-(* let primer_tipi_6 = {
+
+let primer_tipi_6 = {
   instructions = [| MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT |];
   a = 1; b = 2; c = 3; d = 4;
   ip = Address 0;
   zero = true; carry = false;
   stack = [5; 6; 7];
-} *)
+}
 (* val primer_tipi_6 : state =
   {instructions =
     [|MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT|];
@@ -263,7 +271,7 @@ type state
  Prazno stanje pomnilnika lahko predstavimo z zapisom:
 [*----------------------------------------------------------------------------*)
 
-(* let empty = {
+let empty = {
   instructions = [||];
   a = 0;
   b = 0;
@@ -273,7 +281,7 @@ type state
   zero = false;
   carry = false;
   stack = [];
-} *)
+}
 (* val empty : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 0;
    zero = false; carry = false; stack = []} *)
@@ -286,9 +294,19 @@ type state
  seznama v tabelo pomagate z uporabo funkcije `Array.of_list`.
 [*----------------------------------------------------------------------------*)
 
-let init _ = ()
+let init (list_instrukcij : instruction list) : state = {
+  instructions = Array.of_list list_instrukcij;
+  a = 0;
+  b = 0;
+  c = 0;
+  d = 0;
+  ip = Address 0;
+  zero = false;
+  carry = false;
+  stack = [];
+}
 
-(* let primer_tipi_7 = init [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT ] *)
+let primer_tipi_7 = init [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT ]
 (* val primer_tipi_7 : state =
   {instructions =
     [|MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT|];
@@ -314,7 +332,14 @@ let init _ = ()
  funkcija vrne `None`.
 [*----------------------------------------------------------------------------*)
 
-let read_instruction _ = ()
+
+
+
+let napisi_funkcijo = failwith"TUKEJ NAPIS FUNKCIJO LUZR"
+
+(* let read_instruction : instruction option = function
+  | Some of 'a -> 
+  | None ->  *)
 
 (* let primer_izvajanje_1 =
   [
