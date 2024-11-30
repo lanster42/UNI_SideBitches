@@ -160,7 +160,7 @@ let primer_tipi_4 = [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); H
  berljivih oznak kot so `main`, `fib` in `.fib_end` bomo obravnavali kasneje.
 [*----------------------------------------------------------------------------*)
 
-(* let fibonacci n = [
+let fibonacci n = [
   JMP (Address 20);       (* JMP main *)
 
 (* fib: *)
@@ -204,10 +204,10 @@ let primer_tipi_4 = [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); H
   MOV (A, Const n);       (* MOV A, n *)
   CALL (Address 1);       (* CALL fib *)
   HLT;                    (* HLT *)
-] *)
+]
 (* val fibonacci : int -> instruction list = <fun> *)
 
-(* let primer_tipi_5 = fibonacci 10 *)
+let primer_tipi_5 = fibonacci 10
 (* val primer_tipi_5 : instruction list =
   [JMP (Address 20); PUSH (Register C); PUSH (Register B);
    MOV (C, Register A); CMP (A, Const 0); JE (Address 17); CMP (A, Const 1);
@@ -332,21 +332,16 @@ let primer_tipi_7 = init [ MOV (A, Register B); MOV (C, Const 42); JA (Address 1
  funkcija vrne `None`.
 [*----------------------------------------------------------------------------*)
 
+let read_instruction (stanje : state) : instruction option = match stanje.ip with
+  | Address st when st < Array.length stanje.instructions  -> Some stanje.instructions.(st)
+  | _ -> None
 
-
-
-let napisi_funkcijo = failwith"TUKEJ NAPIS FUNKCIJO LUZR"
-
-(* let read_instruction : instruction option = function
-  | Some of 'a -> 
-  | None ->  *)
-
-(* let primer_izvajanje_1 =
+let primer_izvajanje_1 =
   [
     read_instruction { empty with instructions = [| MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT |]; ip = (Address 1) };
     read_instruction { empty with instructions = [| MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT |]; ip = (Address 3) };
     read_instruction { empty with instructions = [| MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT |]; ip = (Address 5) };
-  ] *)
+  ]
 (* val primer_izvajanje_1 : instruction option list =
   [Some (MOV (C, Const 42)); Some HLT; None] *)
 
@@ -355,10 +350,14 @@ let napisi_funkcijo = failwith"TUKEJ NAPIS FUNKCIJO LUZR"
  registra v danem stanju.
 [*----------------------------------------------------------------------------*)
 
-let read_register _ _ = ()
+let read_register (stanje : state) (registr : register) : int = match registr with
+  | B -> stanje.b
+  | A -> stanje.a
+  | C -> stanje.c
+  | D -> stanje.d
 
-(* let primer_izvajanje_2 =
-  read_register { empty with a = 10; b = 42 } B *)
+let primer_izvajanje_2 =
+  read_register { empty with a = 10; b = 42 } B
 (* val primer_izvajanje_2 : int = 42 *)
 
 (*----------------------------------------------------------------------------*
@@ -366,14 +365,16 @@ let read_register _ _ = ()
  celoštevilsko vrednost izraza v danem stanju.
 [*----------------------------------------------------------------------------*)
 
-let read_expression _ _ = ()
+let read_expression (stanje : state) (expresn : expression) : int = match expresn with
+  | Const st -> st
+  | Register registr -> read_register stanje registr
 
-(* let primer_izvajanje_3 =
-  read_expression { empty with a = 10; b = 20 } (Register B) *)
+let primer_izvajanje_3 =
+  read_expression { empty with a = 10; b = 20 } (Register B)
 (* val primer_izvajanje_3 : int = 20 *)
 
-(* let primer_izvajanje_4 =
-  read_expression { empty with a = 10; b = 20 } (Const 42) *)
+let primer_izvajanje_4 =
+  read_expression { empty with a = 10; b = 20 } (Const 42)
 (* val primer_izvajanje_4 : int = 42 *)
 
 (*----------------------------------------------------------------------------*
@@ -386,10 +387,15 @@ let read_expression _ _ = ()
  novo stanje.
 [*----------------------------------------------------------------------------*)
 
-let write_register _ _ _ = ()
+let write_register (stanje : state) (registr : register) (st : int) : state = match registr with
+  | A -> {stanje with a = st}
+  | B -> {stanje with b = st}
+  | C -> {stanje with c = st}
+  | D -> {stanje with d = st}
 
-(* let primer_izvajanje_5 =
-  write_register { empty with c = 42 } D 24 *)
+
+let primer_izvajanje_5 =
+  write_register { empty with c = 42 } D 24
 (* val primer_izvajanje_5 : state =
   {instructions = [||]; a = 0; b = 0; c = 42; d = 24; ip = Address 0;
    zero = false; carry = false; stack = []} *)
@@ -400,10 +406,12 @@ let write_register _ _ _ = ()
  s spremenjenim registrom.
 [*----------------------------------------------------------------------------*)
 
-let perform_unop _ _ _ = ()
+let perform_unop (f : int -> int) (stanje : state) (registr : register) : state = 
+  let vrednost = read_register stanje registr in
+  write_register stanje registr (f vrednost)
 
-(* let primer_izvajanje_6 =
-  perform_unop (fun x -> 101 * x) { empty with c = 5 } C *)
+let primer_izvajanje_6 =
+  perform_unop (fun x -> 101 * x) { empty with c = 5 } C
 (* val primer_izvajanje_6 : state =
   {instructions = [||]; a = 0; b = 0; c = 505; d = 0; ip = Address 0;
    zero = false; carry = false; stack = []} *)
@@ -414,10 +422,14 @@ let perform_unop _ _ _ = ()
  Funkcija naj vrne novo stanje s spremenjenim registrom.
 [*----------------------------------------------------------------------------*)
 
-let perform_binop _ _ _ _ = ()
+let perform_binop (f : int -> int -> int) (stanje : state) (registr : register) (expresn : expression) : state = 
+  let vrednost = read_register stanje registr in
+  match expresn with
+  | Const st -> write_register stanje registr (f vrednost st)
+  | Register _ -> failwith"Nesmeš podati registra"
 
-(* let primer_izvajanje_7 =
-  perform_binop ( * ) { empty with c = 5 } C (Const 101) *)
+let primer_izvajanje_7 =
+  perform_binop ( * ) { empty with c = 5 } C (Const 101)
 (* val primer_izvajanje_7 : state =
   {instructions = [||]; a = 0; b = 0; c = 505; d = 0; ip = Address 0;
    zero = false; carry = false; stack = []} *)
@@ -431,10 +443,10 @@ let perform_binop _ _ _ _ = ()
  povečan za 1, saj v našem primeru vsi ukazi zasedejo enako prostora).
 [*----------------------------------------------------------------------------*)
 
-let next _ = ()
+let next (Address st) : address = Address (st + 1)
 
-(* let primer_izvajanje_8 =
-  next (Address 41) *)
+let primer_izvajanje_8 =
+  next (Address 41)
 (* val primer_izvajanje_8 : address = Address 42 *)
 
 (*----------------------------------------------------------------------------*
@@ -443,17 +455,18 @@ let next _ = ()
  naslednji ukaz.
 [*----------------------------------------------------------------------------*)
 
-let jump _ _ = ()
-let proceed _ = ()
+let jump (stanje : state) : address -> state = fun adres -> {stanje with ip = adres}
 
-(* let primer_izvajanje_9 =
-  jump { empty with ip = Address 42} (Address 10) *)
+let proceed : state -> state = fun stanje -> {stanje with ip = next stanje.ip}
+
+let primer_izvajanje_9 =
+  jump { empty with ip = Address 42} (Address 10)
 (* val primer_izvajanje_9 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 10;
    zero = false; carry = false; stack = []} *)
 
-(* let primer_izvajanje_10 =
-  proceed { empty with ip = Address 42} *)
+let primer_izvajanje_10 =
+  proceed { empty with ip = Address 42}
 (* val primer_izvajanje_10 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 43;
    zero = false; carry = false; stack = []} *)
@@ -465,17 +478,21 @@ let proceed _ = ()
  Če je sklad prazen, naj funkcija `pop_stack` sproži izjemo.
 [*----------------------------------------------------------------------------*)
 
-let push_stack _ _ = ()
-let pop_stack _ = ()
+let push_stack (stanje : state) (st : int) : state = {stanje with stack = st :: stanje.stack}
 
-(* let primer_izvajanje_10 =
-  push_stack { empty with stack = [1; 2; 3] } 42 *)
+
+let pop_stack (stanje : state) : int * state = match stanje.stack with
+  | [] -> failwith""
+  | gl :: rep -> (gl, {stanje with stack = rep})
+
+let primer_izvajanje_10 =
+  push_stack { empty with stack = [1; 2; 3] } 42
 (* val primer_izvajanje_10 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 0;
    zero = false; carry = false; stack = [42; 1; 2; 3]} *)
 
-(* let primer_izvajanje_11 =
-  pop_stack { empty with stack = [1; 2; 3] } *)
+let primer_izvajanje_11 =
+  pop_stack { empty with stack = [1; 2; 3] }
 (* val primer_izvajanje_11 : int * state =
   (1,
    {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 0;
@@ -492,10 +509,13 @@ let pop_stack _ = ()
  kadar je prvo število manjše.Funkcija naj vrne novo stanje.
 [*----------------------------------------------------------------------------*)
 
-let compare _ _ _ = ()
+let compare (stanje : state) (st1 : int) (st2 : int) : state = match st1, st2 with
+  | st1, st2 when st1 = st2 -> {stanje with zero = true; carry = false}
+  | st1, st2 -> if st1 < st2 then {stanje with zero = false; carry = true} else 
+    {stanje with zero = false; carry = false}
 
-(* let primer_izvajanje_12 =
-  compare empty 24 42 *)
+let primer_izvajanje_12 =
+  compare empty 24 42
 (* val primer_izvajanje_12 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 0;
    zero = false; carry = true; stack = []} *)
@@ -506,16 +526,16 @@ let compare _ _ _ = ()
  funkcija skoči na naslednji ukaz.
 [*----------------------------------------------------------------------------*)
 
-let conditional_jump _ _ _ = ()
+let conditional_jump (stanje : state) (adres : address) (bolean : bool) : state = if bolean then jump stanje adres else proceed stanje
 
-(* let primer_izvajanje_13 =
-  conditional_jump { empty with ip = Address 42 } (Address 10) true *)
+let primer_izvajanje_13 =
+  conditional_jump { empty with ip = Address 42 } (Address 10) true
 (* val primer_izvajanje_13 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 10;
    zero = false; carry = false; stack = []} *)
 
-(* let primer_izvajanje_14 =
-  conditional_jump { empty with ip = Address 42 } (Address 10) false *)
+let primer_izvajanje_14 =
+  conditional_jump { empty with ip = Address 42 } (Address 10) false
 (* val primer_izvajanje_14 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 43;
    zero = false; carry = false; stack = []} *)
@@ -529,10 +549,13 @@ let conditional_jump _ _ _ = ()
  na dani naslov in na sklad doda naslednji naslov.
 [*----------------------------------------------------------------------------*)
 
-let call _ _ = ()
+let call (stanje : state) (adres : address) : state = 
+  let naslednja_st : address -> int = fun (Address st) -> st + 1 in
+  let naslednje_stanje = push_stack stanje (naslednja_st stanje.ip) in
+  jump naslednje_stanje adres
 
-(* let primer_izvajanje_15 =
-  call { empty with ip = Address 42 } (Address 10) *)
+let primer_izvajanje_15 =
+  call { empty with ip = Address 42 } (Address 10)
 (* val primer_izvajanje_15 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 10;
    zero = false; carry = false; stack = [43]} *)
@@ -542,10 +565,12 @@ let call _ _ = ()
  ki je na vrhu sklada, in odstrani ta naslov s sklada.
 [*----------------------------------------------------------------------------*)
 
-let return _ = ()
+let return (stanje : state) : state = match stanje.stack with
+  | gl :: rep -> {stanje with ip = Address gl; stack = rep}
+  | [] -> stanje
 
-(* let primer_izvajanje_16 =
-  return { empty with ip = (Address 100); stack = [42; 43; 44] } *)
+let primer_izvajanje_16 =
+  return { empty with ip = (Address 100); stack = [42; 43; 44] }
 (* val primer_izvajanje_16 : state =
   {instructions = [||]; a = 0; b = 0; c = 0; d = 0; ip = Address 42;
    zero = false; carry = false; stack = [43; 44]} *)
@@ -562,37 +587,35 @@ let return _ = ()
  set.html), ki smo ga pogledali na predavanjih.
 [*----------------------------------------------------------------------------*)
 
-(* let run_instruction st = function
-  (* | MOV (reg, exp) -> TODO *)
+let run_instruction st = function
+  | MOV (reg, exp) -> write_register st reg (read_expression st exp) |> proceed
   | ADD (reg, exp) -> perform_binop ( + ) st reg exp |> proceed
-  (* | SUB (reg, exp) -> TODO *)
+  | SUB (reg, exp) -> perform_binop ( - ) st reg exp |> proceed
   | INC reg -> perform_unop succ st reg |> proceed
-  (* | DEC reg -> TODO *)
-  (* | MUL exp -> TODO *)
-  (* | DIV exp -> TODO *)
+  | DEC reg -> perform_unop pred st reg |> proceed
+  | MUL exp -> perform_binop ( * ) st A exp |> proceed
+  | DIV exp -> perform_binop ( / ) st A exp |> proceed
   (* Pozor, OCaml land/lor/lxor interpretira kot simbole, zato jih pišemo infiksno! *)
   | AND (reg, exp) -> perform_binop ( land ) st reg exp |> proceed
   | OR (reg, exp) -> perform_binop ( lor ) st reg exp |> proceed
   | XOR (reg, exp) -> perform_binop ( lxor ) st reg exp |> proceed
   | NOT reg -> perform_unop lnot st reg |> proceed
-  (* | CMP (reg, exp) -> TODO *)
-  (* | JMP add -> TODO *)
-  | JA add -> conditional_jump st add (not st.carry && not st.zero)
-  (* | JAE add -> TODO *)
-  (* | JB add -> TODO *)
-  (* | JBE add -> TODO *)
-  (* | JE add -> TODO *)
-  (* | JNE add -> TODO *)
-  (* | CALL add -> TODO *)
-  (* | RET -> TODO *)
+  | CMP (reg, exp) -> compare st (read_register st reg) (read_expression st exp) |> proceed
+  | JMP add -> jump st add |> proceed
+  | JA add -> conditional_jump st add (not st.carry && not st.zero) |> proceed
+  | JAE add -> conditional_jump st add (not st.carry) |> proceed
+  | JB add -> conditional_jump st add (st.carry && not st.zero) |> proceed
+  | JBE add -> conditional_jump st add st.carry |> proceed
+  | JE add -> conditional_jump st add st.zero |> proceed
+  | JNE add -> conditional_jump st add (not st.zero) |> proceed
+  | CALL add -> call st add |> proceed
+  | RET -> return st |> proceed
   | PUSH exp -> push_stack st (read_expression st exp) |> proceed
   | POP reg ->
       let n, st' = pop_stack st in
       write_register st' reg n |> proceed
-  | HLT -> failwith "Cannot execute instruction" *)
+  | HLT -> failwith "Cannot execute instruction"
 (* val run_instruction : state -> instruction -> state = <fun> *)
-
-let run_instruction _ _ = ()
 
 (*----------------------------------------------------------------------------*
  Napišite funkcijo `run_program : state -> state`, ki izvaja ukaze v danem
@@ -600,12 +623,18 @@ let run_instruction _ _ = ()
  ukaznega pomnilnika. Funkcija naj vrne končno stanje.
 [*----------------------------------------------------------------------------*)
 
-let rec run_program _ = ()
+let rec run_program (stanje: state) : state =
+  match read_instruction stanje with
+  | None -> stanje 
+  | Some HLT -> stanje 
+  | Some instr -> run_program (run_instruction stanje instr)
 
-(* let primer_izvajanje_16 =
+  
+
+let primer_izvajanje_16 =
   fibonacci 10
   |> init
-  |> run_program *)
+  |> run_program
 (* val primer_izvajanje_16 : state =
   {instructions =
     [|JMP (Address 20); PUSH (Register C); PUSH (Register B);
@@ -636,7 +665,12 @@ let rec run_program _ = ()
  register.
 [*----------------------------------------------------------------------------*)
 
-let parse_register _ = ()
+let parse_register (niz : string) : register = match niz with
+  | "A" -> A
+  | "B" -> B
+  | "C" -> C
+  | "D" -> D
+  | _ -> failwith""
 
 let primer_branje_1 = parse_register "A"
 (* val primer_branje_1 : register = A *)
@@ -646,7 +680,10 @@ let primer_branje_1 = parse_register "A"
  izraz.
 [*----------------------------------------------------------------------------*)
 
-let parse_expression _ = ()
+let parse_expression (niz : string) : expression = match niz with
+ |"A" |"B" |"C" |"D" -> Register (parse_register niz)
+ |stevilo when int_of_string_opt stevilo = None -> failwith""
+ |stevilo -> Const (int_of_string stevilo)
 
 let primer_branje_2 = parse_expression "A"
 (* val primer_branje_2 : expression = Register A *)
@@ -665,7 +702,12 @@ let primer_branje_3 = parse_expression "42"
  `String.sub`.
 [*----------------------------------------------------------------------------*)
 
-let clean_line _ = ()
+let clean_line (niz : string) : string =
+  niz
+  |> (fun s -> match String.index_opt s ';' with
+      | Some i -> String.sub s 0 i
+      | None -> s)
+  |> String.trim
 
 let primer_branje_4 = clean_line "   MOV A, 42    ; To je komentar   "
 (* val primer_branje_4 : string = "MOV A, 42" *)
@@ -676,7 +718,10 @@ let primer_branje_4 = clean_line "   MOV A, 42    ; To je komentar   "
  vrstice.
 [*----------------------------------------------------------------------------*)
 
-let clean_lines _ = ()
+let clean_lines (nizi : string list) : string list =
+  nizi
+  |> List.map clean_line
+  |> List.filter (fun s -> s <> "")
 
 (*----------------------------------------------------------------------------*
  ### Oznake
