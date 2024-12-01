@@ -162,7 +162,7 @@ type instruction =
  berljivih oznak kot so `main`, `fib` in `.fib_end` bomo obravnavali kasneje.
 [*----------------------------------------------------------------------------*)
 
-(* let fibonacci n = [
+let fibonacci n = [
   JMP (Address 20);       (* JMP main *)
 
 (* fib: *)
@@ -206,7 +206,7 @@ type instruction =
   MOV (A, Const n);       (* MOV A, n *)
   CALL (Address 1);       (* CALL fib *)
   HLT;                    (* HLT *)
-] *)
+]
 (* val fibonacci : int -> instruction list = <fun> *)
 
 (* let primer_tipi_5 = fibonacci 10 *)
@@ -639,10 +639,10 @@ let rec run_program st =
  | Some HLT -> st
  | Some x -> run_program (run_instruction st x)
 
-(* let primer_izvajanje_16 =
+let primer_izvajanje_16 =
   fibonacci 10
   |> init
-  |> run_program *)
+  |> run_program
 (* val primer_izvajanje_16 : state =
   {instructions =
     [|JMP (Address 20); PUSH (Register C); PUSH (Register B);
@@ -747,13 +747,13 @@ let clean_lines lst =
  podan direktno s številom ali pa z eno izmed oznak v seznamu.
 [*----------------------------------------------------------------------------*)
 
-let parse_address lst str = 
+(* let parse_address lst str = 
  let aux str x =
  if x = str then Some x else None
  in
  match int_of_string_opt str with
  | Some x -> Address x
- | None -> Option.get (List.hd (List.filter_map (aux str) lst))
+ | None -> Option.get (List.hd (List.filter_map (aux str) lst)) *)
 
 (* let primer_branje_5 = parse_address [("main", Address 42)] "main" *)
 (* val primer_branje_5 : address = Address 42 *)
@@ -766,15 +766,15 @@ let parse_address lst str =
  se niz konča z dvopičjem, sicer pa vrne `None`.
 [*----------------------------------------------------------------------------*)
 
-let parse_label str = 
+(* let parse_label str = 
  if String.ends_with ":" str then Some (String.sub str 0 (String.length - 1)) 
- else None
+ else None *)
 
-let primer_branje_7 = parse_label "main:"
+(* let primer_branje_7 = parse_label "main:"
 (* val primer_branje_7 : string option = Some "main" *)
 
 let primer_branje_8 = parse_label "MOV A, 42"
-(* val primer_branje_8 : string option = None *)
+(* val primer_branje_8 : string option = None *) *)
 
 (*----------------------------------------------------------------------------*
  Da bomo iz kode določili oznake, napišite funkcijo `parse_labels : string list
@@ -783,19 +783,19 @@ let primer_branje_8 = parse_label "MOV A, 42"
  pusti nespremenjene.
 [*----------------------------------------------------------------------------*)
 
-let parse_labels lst = 
+(* let parse_labels lst = 
  let rec aux sez par acc =
   match sez with
   | [] -> par, acc
   | x :: xs -> 
    match parse_label x with
-   | Some a -> aux xs ((a, Adress (List.length acc)) :: par) acc
+   | Some a -> aux xs ((a, Address (List.length acc)) :: par) acc
    | None -> aux xs par (x :: acc)
   in
   aux lst [] []
 
 let primer_branje_9 =
-  parse_labels ["JMP main"; "main:"; "MOV A, 0"; "loop:"; "INC A"; "JMP loop"]
+  parse_labels ["JMP main"; "main:"; "MOV A, 0"; "loop:"; "INC A"; "JMP loop"] *)
 (* val primer_branje_9 : (string * address) list * string list =
   ([("loop", Address 2); ("main", Address 1)],
    ["JMP main"; "MOV A, 0"; "INC A"; "JMP loop"]) *)
@@ -805,7 +805,7 @@ let primer_branje_9 =
  string -> instruction`, ki iz niza prebere ukaz.
 [*----------------------------------------------------------------------------*)
 
-let parse_instruction labels line =
+(* let parse_instruction labels line =
   let tokens =
     line
     |> String.split_on_char ' '
@@ -838,7 +838,7 @@ let parse_instruction labels line =
   | ["PUSH"; exp] -> PUSH (parse_expression exp)
   | ["POP"; reg] -> POP (parse_register reg)
   | ["HLT"] -> HLT
-  | _ -> failwith ("Invalid instruction: " ^ line)
+  | _ -> failwith ("Invalid instruction: " ^ line) *)
 
 (* let primer_branje_10 =
   List.map (parse_instruction [("main", Address 42)]) ["MOV A, 42"; "CALL main"; "HLT"] *)
@@ -852,10 +852,10 @@ let parse_instruction labels line =
  funkcija vrne končno stanje.
 [*----------------------------------------------------------------------------*)
 
-let run str = 
+(* let run str = 
  let ozn, uka = parse_labels (clean_lines (String.split_on_char '\n' str)) 
  in
- run_program (init (List.map (fun x -> parse_instruction ozn x) uka))
+ run_program (init (List.map (fun x -> parse_instruction ozn x) uka)) *)
 
 let fibonacci = {|
   JMP main
@@ -905,8 +905,8 @@ let fibonacci = {|
 (* val fibonacci : string =
   "\n  JMP main\n  ; Funkcija, ki izračuna fib(A) in vrednost shrani v register A\n  fib:\n      ; Shranimo vrednosti registrov\n      PUSH C\n      PUSH B\n  \n      ; V C shranimo začetno vrednost A\n      MOV C, A\n  \n      ; Če je A = 0, je to tudi rezultat\n      CMP A, 0\n      JE .fib_end\n  \n      ; Če"... (* string length 872; truncated *) *)
 
-let primer_branje_11 =
-  run fibonacci
+(* let primer_branje_11 =
+  run fibonacci *)
 (* val primer_branje_11 : state =
   {instructions =
     [|JMP (Address 20); PUSH (Register C); PUSH (Register B);

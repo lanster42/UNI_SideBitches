@@ -422,11 +422,11 @@ let primer_izvajanje_6 =
  Funkcija naj vrne novo stanje s spremenjenim registrom.
 [*----------------------------------------------------------------------------*)
 
-let perform_binop (f : int -> int -> int) (stanje : state) (registr : register) (expresn : expression) : state = 
-  let vrednost = read_register stanje registr in
-  match expresn with
-  | Const st -> write_register stanje registr (f vrednost st)
-  | Register _ -> failwith"Nesmeš podati registra"
+let perform_binop (f : int -> int -> int) (stanje : state) (registr : register) (expresn : expression) : state = match registr with
+  | A -> {stanje with a = f stanje.a (read_expression stanje expresn)}
+  | B -> {stanje with b = f stanje.b (read_expression stanje expresn)}
+  | C -> {stanje with c = f stanje.c (read_expression stanje expresn)}
+  | D -> {stanje with c = f stanje.d (read_expression stanje expresn)}
 
 let primer_izvajanje_7 =
   perform_binop ( * ) { empty with c = 5 } C (Const 101)
@@ -587,12 +587,13 @@ let primer_izvajanje_16 =
  set.html), ki smo ga pogledali na predavanjih.
 [*----------------------------------------------------------------------------*)
 
-let run_instruction st = function
+let run_instruction st = 
+  function
   | MOV (reg, exp) -> write_register st reg (read_expression st exp) |> proceed
   | ADD (reg, exp) -> perform_binop ( + ) st reg exp |> proceed
   | SUB (reg, exp) -> perform_binop ( - ) st reg exp |> proceed
   | INC reg -> perform_unop succ st reg |> proceed
-  | DEC reg -> perform_unop pred st reg |> proceed
+  | DEC reg -> perform_unop (fun x -> x-1) st reg |> proceed
   | MUL exp -> perform_binop ( * ) st A exp |> proceed
   | DIV exp -> perform_binop ( / ) st A exp |> proceed
   (* Pozor, OCaml land/lor/lxor interpretira kot simbole, zato jih pišemo infiksno! *)
@@ -600,16 +601,16 @@ let run_instruction st = function
   | OR (reg, exp) -> perform_binop ( lor ) st reg exp |> proceed
   | XOR (reg, exp) -> perform_binop ( lxor ) st reg exp |> proceed
   | NOT reg -> perform_unop lnot st reg |> proceed
-  | CMP (reg, exp) -> compare st (read_register st reg) (read_expression st exp) |> proceed
-  | JMP add -> jump st add |> proceed
-  | JA add -> conditional_jump st add (not st.carry && not st.zero) |> proceed
-  | JAE add -> conditional_jump st add (not st.carry) |> proceed
-  | JB add -> conditional_jump st add (st.carry && not st.zero) |> proceed
-  | JBE add -> conditional_jump st add st.carry |> proceed
-  | JE add -> conditional_jump st add st.zero |> proceed
-  | JNE add -> conditional_jump st add (not st.zero) |> proceed
-  | CALL add -> call st add |> proceed
-  | RET -> return st |> proceed
+  | CMP (reg, exp) ->  compare st (read_register st reg) (read_expression st exp) |> proceed
+  | JMP add -> jump st add
+  | JA add -> conditional_jump st add (not st.carry && not st.zero)
+  | JAE add -> conditional_jump st add (not st.carry)
+  | JB add -> conditional_jump st add st.carry
+  | JBE add -> conditional_jump st add (st.carry || st.zero)
+  | JE add -> conditional_jump st add st.zero
+  | JNE add -> conditional_jump st add (not st.zero)
+  | CALL add -> call st add
+  | RET -> return st
   | PUSH exp -> push_stack st (read_expression st exp) |> proceed
   | POP reg ->
       let n, st' = pop_stack st in
@@ -623,13 +624,11 @@ let run_instruction st = function
  ukaznega pomnilnika. Funkcija naj vrne končno stanje.
 [*----------------------------------------------------------------------------*)
 
-let rec run_program (stanje: state) : state =
-  match read_instruction stanje with
-  | None -> stanje 
-  | Some HLT -> stanje 
-  | Some instr -> run_program (run_instruction stanje instr)
-
-  
+let rec run_program st =
+  match read_instruction st with
+  | None -> st
+  | Some HLT -> st
+  | Some x -> run_program (run_instruction st x) 
 
 let primer_izvajanje_16 =
   fibonacci 10
